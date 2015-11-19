@@ -109,6 +109,21 @@ static NSTimeInterval AnimationDuration = 0.3;
     messageLabel.text = _message;
     [contentView addSubview:messageLabel];
     
+    
+    codeTypeButton = [[UIButton alloc] init];
+    codeTypeButton.translatesAutoresizingMaskIntoConstraints = NO;
+    codeTypeButton.titleLabel.font = [UIFont systemFontOfSize:14];
+    [codeTypeButton setTitleColor:HexColor(0x51bbff) forState:UIControlStateNormal];
+    codeTypeButton.titleLabel.textAlignment = NSTextAlignmentCenter;
+    if (_simple) {
+        [codeTypeButton setTitle:NSLocalizedString(@"Complex Passcode", nil) forState:UIControlStateNormal];
+    }else{
+        [codeTypeButton setTitle:NSLocalizedString(@"Simple Passcode", nil) forState:UIControlStateNormal];
+    }
+    [codeTypeButton addTarget:self action:@selector(changeCodeTypeAction:) forControlEvents:UIControlEventTouchUpInside];
+    [contentView addSubview:codeTypeButton];
+    
+    
     _failedAttemptsView = [[UIView alloc] init];
     _failedAttemptsView.translatesAutoresizingMaskIntoConstraints = NO;
     _failedAttemptsView.backgroundColor = [UIColor colorWithRed:0.75 green:0.16 blue:0.16 alpha:1];
@@ -142,6 +157,7 @@ static NSTimeInterval AnimationDuration = 0.3;
                             @"failedAttemptsLabel": failedAttemptsLabel,
                             @"failedAttemptsView": _failedAttemptsView,
                             @"messageLabel": messageLabel,
+                            @"codeTypeButton": codeTypeButton,
                             @"passcodeTextField": passcodeTextField,
                             @"promptLabel": promptLabel,
                             };
@@ -180,8 +196,9 @@ static NSTimeInterval AnimationDuration = 0.3;
 
     [constraints addObject:[NSLayoutConstraint constraintWithItem:_failedAttemptsView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:contentView attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
     [constraints addObject:[NSLayoutConstraint constraintWithItem:messageLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:contentView attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
+     [constraints addObject:[NSLayoutConstraint constraintWithItem:codeTypeButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:contentView attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
     [constraints addObject:[NSLayoutConstraint constraintWithItem:promptLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:contentView attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[promptLabel]-[inputPanel]-[messageLabel]-[failedAttemptsView(h)]" options:0 metrics:@{@"h": @(FailedBackgroundHeight)} views:views]];
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[promptLabel]-[inputPanel]-[messageLabel]-[failedAttemptsView(h)]-[codeTypeButton]" options:0 metrics:@{@"h": @(FailedBackgroundHeight)} views:views]];
 
     _installedConstraints = constraints;
     [self.view addConstraints:_installedConstraints];
@@ -377,31 +394,40 @@ static NSTimeInterval AnimationDuration = 0.3;
         if (finalScreen) {
             self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(handleCompleteField)];
         } else {
-            self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Next", nil) style:UIBarButtonItemStyleBordered target:self action:@selector(handleCompleteField)];
+            self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Next", nil) style:UIBarButtonItemStylePlain target:self action:@selector(handleCompleteField)];
         }
         self.navigationItem.rightBarButtonItem.enabled = NO;
+    }else{
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self action:@selector(cancel:)];
+        self.navigationItem.rightBarButtonItem.enabled = YES;
     }
     
     switch (_action) {
         case PasscodeActionSet:
             if (phase == 0) {
                 promptLabel.text = _enterPrompt;
+                codeTypeButton.hidden = NO;
             } else {
                 promptLabel.text = _confirmPrompt;
+                codeTypeButton.hidden = YES;
             }
             break;
             
         case PasscodeActionEnter:
             promptLabel.text = _enterPrompt;
+            codeTypeButton.hidden = YES;
             break;
             
         case PasscodeActionChange:
             if (phase == 0) {
                 promptLabel.text = _changePrompt;
+                codeTypeButton.hidden = YES;
             } else if (phase == 1) {
                 promptLabel.text = _enterPrompt;
+                codeTypeButton.hidden = NO;
             } else {
                 promptLabel.text = _confirmPrompt;
+                codeTypeButton.hidden = YES;
             }
             break;
     }
@@ -418,5 +444,42 @@ static NSTimeInterval AnimationDuration = 0.3;
         }];
     }
 }
+
+
+- (void)changeCodeTypeAction:(id)sender
+{
+    [self resetCodeType];
+    [self showScreenForPhase:phase animated:NO];
+}
+
+- (void)resetCodeType
+{
+    [passcodeTextField resignFirstResponder];
+    if (self.simple) {
+        self.simple = NO;
+        
+        for (int i=0;i<4;i++) {
+            _digitLabels[i].hidden = YES;
+        }
+        passcodeTextField.hidden = NO;
+        passcodeTextField.keyboardType = UIKeyboardTypeDefault;
+        _inputPanel.backgroundColor = [UIColor whiteColor];
+        
+    }else{
+        self.simple = YES;
+        
+        for (int i=0;i<4;i++) {
+            _digitLabels[i].hidden = NO;
+        }
+        passcodeTextField.hidden = YES;
+        passcodeTextField.keyboardType = UIKeyboardTypeNumberPad;
+        _inputPanel.backgroundColor = [UIColor clearColor];
+    }
+    [self.view setNeedsUpdateConstraints];
+    [self.view layoutIfNeeded];
+    
+    [passcodeTextField becomeFirstResponder];
+}
+
 
 @end

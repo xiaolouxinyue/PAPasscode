@@ -7,7 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import "BaseViewController.h"
 typedef enum {
     PasscodeActionSet,
     PasscodeActionEnter,
@@ -29,7 +29,7 @@ typedef enum {
 
 @end
 
-@interface PAPasscodeViewController : UIViewController {
+@interface PAPasscodeViewController : BaseViewController {
     NSArray *_installedConstraints;
     UIView *_inputPanel;
     NSLayoutConstraint *_keyboardHeightConstraint;
@@ -37,6 +37,7 @@ typedef enum {
     NSInteger phase;
     UILabel *promptLabel;
     UILabel *messageLabel;
+    UIButton *codeTypeButton;
     UIView *_failedAttemptsView;
     UILabel *failedAttemptsLabel;
     UITextField *passcodeTextField;
